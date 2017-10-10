@@ -1,0 +1,55 @@
+---
+- name: ensure ec2_facts are present
+  ec2_metadata_facts:
+  ignore_errors: yes
+
+- set_fact:
+    rabbitmq_cluster: "{{ ansible_ec2_security_groups.split(',')[0].replace('.', '').upper() }}"
+  when:
+    - rabbitmq_use_cluster
+
+- include: install.yml
+  tags:
+    - rabbitmq
+    - install
+
+- include: cluster-node.yml
+  when:
+    - rabbitmq_use_cluster
+    - ansible_hostname != rabbitmq_cluster_master
+  tags:
+    - rabbitmq
+    - cluster
+
+- include: vhosts.yml
+  tags:
+    - rabbitmq
+    - vhosts
+
+- include: users.yml
+  run_once: True
+  tags:
+    - rabbitmq
+    - users
+
+- include: policies.yml
+  tags:
+    - rabbitmq
+    - policies
+
+- include: queues.yml
+  tags:
+    - rabbitmq
+    - queues
+
+- include: exchanges.yml
+  tags:
+    - rabbitmq
+    - exchanges
+
+- include: sync-queues.yml
+  when:
+    - rabbitmq_use_cluster
+  tags:
+    - rabbitmq
+    - sync

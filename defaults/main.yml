@@ -1,0 +1,44 @@
+---
+rabbitmq_user: rabbitmq
+rabbitmq_group: rabbitmq
+rabbitmq_vhosts: {}
+rabbitmq_users: {}
+rabbitmq_queues: {}
+rabbitmq_policies: {}
+rabbitmq_exchanges: {}
+rabbitmq_plugins:
+  - name: "rabbitmq_management_visualiser"
+  - name: "rabbitmq_management_agent"
+  - name: "rabbitmq_management"
+rabbitmq_ports:
+  edp_min: 9100
+  edp_max: 9105
+rabbitmq_use_fqdn: "true"
+rabbitmq_use_cluster: True
+rabbitmq_cluster_master: broker01
+rabbitmq_cluster_master_fqdn: "{{ rabbitmq_cluster_master }}.{{ ansible_nodename.partition('.')[2] }}"
+rabbitmq_ulimit_files: 4096
+rabbitmq_policy_priority_default: 0
+rabbitmq_policy_apply_to_default: all
+rabbitmq_queues_default_state: present
+rabbitmq_exchanges_default_state: present
+rabbitmq_bindings_default_state: present
+rabbitmq_policies_default_state: present
+rabbitmq_vhosts_default_state: present
+rabbitmq_policies_default_pattern: .*
+rabbitmq_packages:
+  - rabbitmq-server
+rabbitmq_system_users:
+  - guest
+rabbitmq_system_vhosts:
+  - '/'
+rabbitmq_system_folders:
+  - /etc/rabbitmq
+  - /var/lib/rabbitmq
+  - /home/rabbitmq
+rabbitmq_config_files:
+  - rabbitmq.config
+  - rabbitmq-env.conf
+rabbitmq_cookies:
+  - /var/lib/rabbitmq/.erlang.cookie
+  - /home/rabbitmq/.erlang.cookie

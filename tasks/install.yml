@@ -1,0 +1,92 @@
+---
+- name: place reset.sh
+  copy:
+    src: reset.sh
+    dest: /root/reset_rabbitmq.sh
+    owner: root
+    group: root
+    mode: 0755
+
+- name: ensure group exists
+  group:
+    name: "{{ rabbitmq_group }}"
+    state: present
+
+- name: ensure user exists
+  user:
+    name: "{{ rabbitmq_user }}"
+    group: "{{ rabbitmq_group }}"
+
+- name: ensure rabbitmq folders exist
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - "{{ rabbitmq_system_folders }}"
+
+- name: ensure rabbitmq.config
+  template:
+    src: "{{ item }}.j2"
+    dest: "/etc/rabbitmq/{{ item }}"
+  notify:
+    - restart rabbitmq
+  with_items:
+    - "{{ rabbitmq_config_files }}"
+
+- name: ensure shared secret is placed
+  template:
+    src: secret.j2
+    dest: "{{ item }}"
+    mode: 0400
+    owner: "{{ rabbitmq_user }}"
+    group: "{{ rabbitmq_group }}"
+  notify:
+    - restart rabbitmq
+  with_items:
+    - "{{ rabbitmq_cookies }}"
+  when:
+    - rabbitmq_use_cluster
+
+- name: add erlang repository
+  apt_repository:
+    repo: "deb https://packages.erlang-solutions.com/ubuntu trusty contrib"
+
+- name: add rabbitmq repository
+  apt_repository:
+    repo: "deb http://www.rabbitmq.com/debian/ testing main"
+
+- name: update apt repositories
+  apt:
+    update_cache: yes
+    cache_valid_time: "{{ apt_cache_valid_time | default(3600) }}"
+
+- name: install rabbitmq packages
+  apt:
+    name: "{{ item }}"
+    state: installed
+    allow_unauthenticated: yes
+  with_items:
+    - "{{ rabbitmq_packages }}"
+  notify:
+    - restart rabbitmq
+  register: install_status
+
+- name: enable rabbitmq plugins
+  rabbitmq_plugin:
+    names: "{{ item.name }}"
+    new_only: yes
+  with_items:
+    - "{{ rabbitmq_plugins }}"
+  when:
+    - rabbitmq_plugins is defined
+  notify:
+    - restart rabbitmq
+  tags: ["rabbitmq", "install plugins"]
+
+# bit of a hack, but I want to restart *now* when I first install rabbit, otherwise creating
+# queues and exchanges will fail with a API error
+- name: restart rabbitmq server
+  service:
+    name: rabbitmq-server
+    state: restarted
+  when: install_status.changed

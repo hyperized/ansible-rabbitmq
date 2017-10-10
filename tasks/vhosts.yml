@@ -1,0 +1,28 @@
+---
+- name: get list of current vhosts
+  shell: rabbitmqctl list_vhosts | grep '\/' | awk '{print $1}'
+  changed_when: False
+  register: current_vhosts
+
+- name: set list of desired vhosts
+  set_fact:
+    desired_vhosts: "{{ rabbitmq_vhosts | list }} + {{ rabbitmq_system_vhosts }}"
+
+- name: set list of vhosts that need deletion
+  set_fact:
+    remove_vhosts: "{{ current_vhosts.stdout_lines | difference(desired_vhosts) }}"
+
+- name: remove vhosts
+  rabbitmq_vhost:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ remove_vhosts }}"
+  ignore_errors: True
+
+- name: ensure vhosts are present (may fail when present)
+  rabbitmq_vhost:
+    name: "{{ item.key }}"
+    state: present
+  ignore_errors: True
+  with_dict: "{{ rabbitmq_vhosts }}"

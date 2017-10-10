@@ -1,0 +1,31 @@
+---
+- name: get list of current users
+  shell: rabbitmqctl list_users | grep -P '\t' | awk '{print $1}'
+  changed_when: False
+  register: current_users
+
+- name: set list of desired users
+  set_fact:
+    desired_users: "{{ rabbitmq_users | list }} + {{ rabbitmq_system_users }}"
+
+- name: set list of users that need deletion
+  set_fact:
+    remove_users: "{{ current_users.stdout_lines | difference(desired_users) }}"
+
+- name: remove users
+  rabbitmq_user:
+    user: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ remove_users }}"
+
+- name: ensure users
+  rabbitmq_user:
+    user: "{{ item.key }}"
+    password: "{{ item.value.password }}"
+    permissions: "{{ item.value.permissions }}"
+    tags: "{{ item.value.tags }}"
+    state: present
+  ignore_errors: True
+  changed_when: False
+  with_dict: "{{ rabbitmq_users }}"

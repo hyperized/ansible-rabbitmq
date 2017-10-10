@@ -1,0 +1,7 @@
+---
+- name: ensure slaves are synced
+  shell: 'rabbitmqctl list_queues name slave_pids synchronised_slave_pids | grep "\[\]" | awk "{ print $1 }" | xargs -n 1 rabbitmqctl sync_queue'
+  register: slave_sync_output
+  ignore_errors: True
+  failed_when: "'yourmom' in slave_sync_output"
+  changed_when: False

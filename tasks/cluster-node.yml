@@ -1,0 +1,42 @@
+---
+- name: verify existing status
+  shell: rabbitmqctl cluster_status | grep 'cluster_name' | awk -F'"' '{print $2}'
+  register: cluster_status
+  changed_when: False
+
+- block:
+
+  - name: ensure rabbitmq-server is stopped
+    service:
+      name: rabbitmq-server
+      state: stopped
+
+  - name: ensure rabbitmq is stopped (just in case)
+    shell: killall beam.smp
+    ignore_errors: True
+
+  - name: ensure rabbitmq is started
+    service:
+      name: rabbitmq-server
+      state: started
+
+  - name: stop rabbitmq app (clustering).
+    shell: rabbitmqctl stop_app
+
+  - name: resetting rabbitmq app (clustering).
+    shell: rabbitmqctl reset
+
+  - name: add this node to cluster (clustering).
+    shell: "rabbitmqctl join_cluster rabbit@{{ rabbitmq_cluster_master }}"
+    when: rabbitmq_use_fqdn == "false"
+    ignore_errors: True
+
+  - name: add this node to cluster with fqdn
+    shell: "rabbitmqctl join_cluster rabbit@{{ rabbitmq_cluster_master_fqdn }}"
+    when: rabbitmq_use_fqdn == "true"
+    ignore_errors: True
+
+  - name: start rabbitmq app (clustering).
+    shell: rabbitmqctl start_app
+
+  when: rabbitmq_cluster_master not in cluster_status.stdout

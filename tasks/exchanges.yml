@@ -1,0 +1,24 @@
+---
+- name: ensure exchanges
+  rabbitmq_exchange:
+    name: "{{ item.value.name }}"
+    exchange_type: "{{ item.value.type }}"
+    vhost: "{{ item.value.vhost }}"
+    login_user: "{{ item.value.user }}"
+    login_password: "{{ rabbitmq_users[item.value.user].password }}"
+    state: "{{ item.value.state | default( rabbitmq_exchanges_default_state ) }}"
+  with_dict: "{{ rabbitmq_exchanges }}"
+
+- name: ensure default exchange bindings
+  rabbitmq_binding:
+    name: "{{ item.0.name }}"
+    destination: "{{ item.1.name }}"
+    type: "{{ item.1.type }}"
+    vhost: "{{ item.0.vhost }}"
+    login_user: "{{ item.0.user }}"
+    login_password: "{{ rabbitmq_users[item.0.user].password }}"
+    state: "{{ item.1.state | default( rabbitmq_bindings_default_state ) }}"
+  with_subelements:
+    - "{{ rabbitmq_exchanges }}"
+    - bindings
+    - skip_missing: True

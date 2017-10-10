@@ -1,0 +1,19 @@
+---
+- name: enable ha queueing for default vhost
+  rabbitmq_policy:
+    name: ha-all
+    pattern: '^'
+  args:
+    tags:
+      "ha-mode": all
+
+- name: ensure policies
+  rabbitmq_policy:
+    name: "{{ item.key }}"
+    apply_to: "{{ item.value.apply_to | default( rabbitmq_policy_apply_to_default ) }}"
+    pattern: "{{ item.value.pattern  | default( rabbitmq_policies_default_pattern ) }}"
+    vhost: "{{ item.value.vhost }}"
+    priority: "{{ item.value.priority | default( rabbitmq_policy_priority_default ) }}"
+    tags: "{{ item.value.tags }}"
+    state:  "{{ item.value.state | default( rabbitmq_policies_default_state ) }}"
+  with_dict: "{{ rabbitmq_policies }}"

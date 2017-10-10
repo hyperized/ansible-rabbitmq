@@ -1,0 +1,10 @@
+---
+- name: ensure queues
+  rabbitmq_queue:
+    name: "{{ item.value.name | default ( item.key ) }}"
+    vhost: "{{ item.value.vhost }}"
+    login_user: "{{ item.value.user }}"
+    login_password: "{{ rabbitmq_users[item.value.user].password }}"
+    state: "{{ item.value.state | default( rabbitmq_queues_default_state ) }}"
+    arguments: "{{ item.value.arguments | default( omit ) }}"
+  with_dict: "{{ rabbitmq_queues }}"

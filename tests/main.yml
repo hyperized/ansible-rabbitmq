@@ -1,0 +1,54 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  vars:
+    rabbitmq_use_fqdn: "false"
+    rabbitmq_vhosts:
+      /:
+      /test:
+    rabbitmq_users:
+      root:
+        password: helloworld
+        tags: administrator
+        permissions:
+          - vhost: /
+            configure_priv: .*
+            write_priv: .*
+            read_priv: .*
+          - vhost: /test
+            configure_priv: .*
+            write_priv: .*
+            read_priv: .*
+      test-user:
+        password: helloworld
+        tags: test-user
+        permissions:
+          - vhost: /test
+            configure_priv: .*
+            write_priv: .*
+            read_priv: .*
+    rabbitmq_queues:
+      test.queue:
+        name: test.queue
+        vhost: /test
+        user: root
+    rabbitmq_exchanges:
+      test.exchange:
+        name: test.exchange
+        user: root
+        vhost: /test
+        type: fanout
+        bindings:
+          - name: test.queue
+            type: queue
+            routing_key: '*'
+    rabbitmq_policies:
+      ha-all-test:
+        priority: 0
+        tags:
+          ha-mode: all
+        vhost: /test
+  roles:
+    - role: fdmg.rabbitmq
+
